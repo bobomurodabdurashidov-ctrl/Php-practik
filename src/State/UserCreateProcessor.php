@@ -7,19 +7,15 @@ namespace App\State;
 use App\Component\User\UserFactory;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Component\User\UserManager;
 use App\Entity\User;
-//use Symfony\Component\DependencyInjection\Attribute\AsService;
 
-//#[AsService]
-
-
-use Doctrine\ORM\EntityManagerInterface;
 
 class UserCreateProcessor implements ProcessorInterface
 {
     public function __construct(
-        private EntityManagerInterface $em,
-        private UserFactory $userFactory
+        private UserFactory $userFactory,
+        private readonly UserManager $userManager,
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -33,10 +29,10 @@ class UserCreateProcessor implements ProcessorInterface
             $data->getPhone()
         );
 
-        $this->em->persist($user);
-        $this->em->flush();
+        $this->userManager->save($user, true);
 
-//        print_r($data);
+
+//        print_r($user);
         return $user;
     }
 }
