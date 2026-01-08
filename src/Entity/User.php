@@ -10,10 +10,14 @@ use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use App\Component\User\FullNameDto;
 use App\Repository\UserRepository;
+use App\State\User\FullNameProcessor;
 use App\State\UserCreateProcessor;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -31,6 +35,18 @@ use Symfony\Component\Validator\Constraints as Assert;
             name: 'createUser',
             processor: UserCreateProcessor::class
         ),
+        new Post(
+            uriTemplate: '/users/full-name',
+            input: FullNameDto::class,
+            output: FullNameDto::class,
+            name: 'fullName',
+            processor: FullNameProcessor::class
+        ),
+        new Post(
+            uriTemplate: 'users/auth',
+            name: 'auth',
+        ),
+
         new Get(),
         new Delete()
     ],
@@ -46,7 +62,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiFilter(OrderFilter::class, properties: [
     'id', 'age'
 ])]
-class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface
+class User implements PasswordAuthenticatedUserInterface, UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -58,6 +74,7 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
     #[Groups(['user:read', 'user:write'])]
     #[Assert\NotBlank(message: 'Email bo‘sh bo‘lishi mumkin emas')]
     #[Assert\Email(message: 'Email noto‘g‘ri formatda. Masalan: test@gmail.com')]
+
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
@@ -182,5 +199,16 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
         $this->createdAt = $createdAt;
 
         return $this;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->getEmail();
+        // TODO: Implement getUserIdentifier() method.
     }
 }

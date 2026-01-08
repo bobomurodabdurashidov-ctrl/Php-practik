@@ -5,13 +5,30 @@ namespace App\Entity;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Post;
+use App\Component\Book\BookPriceDto;
 use App\Repository\BookRepository;
+use App\State\Book\BookPriceProcessor;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource]
 #[ORM\Entity(repositoryClass: BookRepository::class)]
+#[ApiResource(
+    normalizationContext: ['groups' => ['book:read']],
+    denormalizationContext: ['groups' => ['book:write']]
+)]
+#[ApiResource(
+    operations: [
+        new Post(
+            uriTemplate: '/books/price',
+            input: BookPriceDto::class,
+            output: BookPriceDto::class,
+            name: 'book_price',
+            processor: BookPriceProcessor::class
+        ),
+    ]
+)]
 #[ApiFilter(
     SearchFilter::class,
     properties: [
@@ -21,11 +38,6 @@ use Symfony\Component\Validator\Constraints as Assert;
         'category.name' => 'exact',
     ]
 )]
-#[ApiResource(
-    normalizationContext: ['groups' => ['book:read']],
-    denormalizationContext: ['groups' => ['book:write']]
-)]
-
 class Book
 {
     #[ORM\Id]
@@ -38,17 +50,25 @@ class Book
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Assert\NotBlank]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
     private ?string $text = null;
 
-    #[ORM\ManyToOne(inversedBy: 'books')]
+    #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotBlank]
+    #[Assert\NotNull]
     private ?Category $category = null;
+
+    /**
+     * Book cover image
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?MediaObject $image = null;
+
+    // ---------------- getters / setters ----------------
 
     public function getId(): ?int
     {
@@ -60,10 +80,9 @@ class Book
         return $this->name;
     }
 
-    public function setName(string $name): static
+    public function setName(string $name): self
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -72,10 +91,9 @@ class Book
         return $this->description;
     }
 
-    public function setDescription(?string $description): static
+    public function setDescription(?string $description): self
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -84,10 +102,9 @@ class Book
         return $this->text;
     }
 
-    public function setText(string $text): static
+    public function setText(string $text): self
     {
         $this->text = $text;
-
         return $this;
     }
 
@@ -96,10 +113,20 @@ class Book
         return $this->category;
     }
 
-    public function setCategory(?Category $category): static
+    public function setCategory(Category $category): self
     {
         $this->category = $category;
+        return $this;
+    }
 
+    public function getImage(): ?MediaObject
+    {
+        return $this->image;
+    }
+
+    public function setImage(?MediaObject $image): self
+    {
+        $this->image = $image;
         return $this;
     }
 }
